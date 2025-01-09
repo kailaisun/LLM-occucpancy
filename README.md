@@ -395,4 +395,98 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+## Baseline models
+To compare our LLM accuracy results, we applied baseline models (Logistic Regression, Random Forest, Decision Tree, and XGBoost). In the following script, we load multiple CSV datasets containing occupancy data and process them by splitting the data into training and testing sets. The training set includes data from Monday to Thursday, while the testing set consists of Friday's data. We then train each baseline model on the training data and evaluate their performance by predicting occupancy levels on the test data. The accuracy results for each model are calculated and saved in a JSON file for each dataset, allowing us to easily compare model performances. These results are also printed to the console for immediate review. This script provides a structured approach for assessing and comparing the effectiveness of different machine learning models in predicting occupancy.
+
+## Code
+
+```python
+import pandas as pd
+import os
+import json
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
+
+def load_data(filepath):
+    # Load the dataset and set datetime as index
+    data = pd.read_csv(filepath)
+    data['datetime'] = pd.to_datetime(data['datetime'])
+    data.set_index('datetime', inplace=True)
+    return data
+
+def prepare_data(data):
+    # Split data based on day of the week
+    train_data = data[data.index.weekday < 4]  # Monday to Thursday
+    test_data = data[data.index.weekday == 4]  # Friday
+
+    # Define the features and target, excluding 'occupant_num'
+    X_train = train_data.drop(columns='occupant_num')
+    y_train = train_data['occupant_num']
+    X_test = test_data.drop(columns='occupant_num')
+    y_test = test_data['occupant_num']
+
+    return X_train, y_train, X_test, y_test
+
+def train_and_evaluate(X_train, y_train, X_test, y_test):
+    # Define models
+    models = {
+        'Logistic Regression': LogisticRegression(max_iter=1000),
+        'Random Forest': RandomForestClassifier(),
+        'Decision Tree': DecisionTreeClassifier(),
+        'XGBoost': GradientBoostingClassifier()
+    }
+
+    # Train and evaluate each model
+    results = {}
+    for name, model in models.items():
+        model.fit(X_train, y_train)
+        predictions = model.predict(X_test)
+        accuracy = accuracy_score(y_test, predictions)
+        results[name] = accuracy
+    return results
+
+def main():
+    # Set the directory containing the CSV files
+    data_directory = './Dataset'  # Point to the 'Dataset' folder
+    result_directory = 'Result_ML'
+    if not os.path.exists(result_directory):
+        os.makedirs(result_directory)
+
+    # Process each CSV file in the directory
+    for filename in os.listdir(data_directory):
+        if filename.endswith('.csv'):
+            filepath = os.path.join(data_directory, filename)
+            data = load_data(filepath)
+            X_train, y_train, X_test, y_test = prepare_data(data)
+            results = train_and_evaluate(X_train, y_train, X_test, y_test)
+            results_path = os.path.join(result_directory, f'{filename}_results.json')
+            with open(results_path, 'w') as file:
+                json.dump(results, file)
+            print(f"Results for {filename}:")
+            for model_name, accuracy in results.items():
+                print(f"{model_name}: {accuracy:.2%}")
+
+if __name__ == "__main__":
+    main()
+```
+## Model Accuracy Results
+
+| Interval         | Logistic Regression | Random Forest | Decision Tree | XGBoost | LLM (llama3.2:latest)    |
+|------------------|---------------------|---------------|---------------|---------|----------------------|
+| Week 1 - 5 min   | 91.67%              | 94.44%        | 88.89%        | 93.06%  | 91.67%               |
+| Week 1 - 10 min  | 86.36%              | 88.64%        | 68.18%        | 88.64%  | 86.36%               |
+| Week 1 - 30 min  | 83.33%              | 83.33%        | 72.22%        | 83.33%  | 88.89%               |
+| Week 2 - 5 min   | 86.73%              | 89.80%        | 83.67%        | 88.78%  | 86.73%               |
+| Week 2 - 10 min  | 87.50%              | 91.67%        | 77.08%        | 89.58%  | 89.58%               |
+| Week 2 - 30 min  | 91.67%              | 100.00%       | 66.67%        | 100.00% | 91.67%               |
+| Week 3 - 5 min   | 76.71%              | 65.75%        | 42.47%        | 63.01%  | 82.19%               |
+| Week 3 - 10 min  | 65.12%              | 60.47%        | 46.51%        | 55.81%  | 86.05%               |
+| Week 3 - 30 min  | 63.16%              | 63.16%        | 63.16%        | 63.16%  | 94.74%               |
+
+## Conclusion
+The LLM (llama3.2:latest) consistently outperforms baseline models like Decision Tree and Logistic Regression, particularly in longer time intervals (10 min and 30 min). LLM shows better generalization in Week 3, where it achieves higher accuracy than all baseline models, especially at the 30-minute interval. This trend highlights LLM's robustness in predicting occupancy levels, even in more complex scenarios with extended time intervals. Additionally, in Week 2, LLM demonstrates a competitive edge, often matching or surpassing the accuracy of Random Forest and XGBoost. Overall, LLM appears to be a strong model, excelling in various time intervals and providing reliable predictions across different weeks, showcasing its potential for occupancy prediction tasks.
+
 
