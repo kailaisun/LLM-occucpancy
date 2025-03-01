@@ -372,7 +372,7 @@ if __name__ == "__main__":
 **Note**: Results shown are for llama3.2:latest. To generate results for Gemini-1.5-pro or DeepSeek_R1, adjust the model parameter in the LLM script.
 
 # Conclusion
-The LLM (llama3.2:latest) consistently outperforms Decision Tree and Logistic Regression, particularly at longer intervals (10 and 30 minutes), and demonstrates strong generalization in Week 3 with up to 94.74% accuracy. It remains competitive with Random Forest and XGBoost, especially in Week 2. LLMs, including Gemini-1.5-pro and DeepSeek_R1, provide robust occupancy prediction across various intervals and weeks.
+Based on the data, Large Language Models like Ollama, Gemini-pro, and Deepseek-R1 consistently outperform traditional models such as Logistic Regression, Random Forest, Decision Tree, and XGBoost across various intervals and training/testing configurations. Notably, Gemini-pro and Deepseek-R1 often achieve the highest accuracies, demonstrating their robustness and superior predictive capabilities, particularly under stringent training/testing splits. Their performance highlights their potential as effective alternatives in complex, dynamic scenarios requiring high accuracy and adaptability.
 
 # Contributing
 Contributions are welcome! To contribute:
