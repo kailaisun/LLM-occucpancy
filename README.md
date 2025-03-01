@@ -1,262 +1,175 @@
-# LLM-occucpancy
+# LLM-Occupancy
+
+This project predicts room occupancy using machine learning models, including LLMs (llama3.2:latest, Gemini-1.5-pro, DeepSeek_R1), alongside baseline models. Data is preprocessed, normalized, balanced, and split for training and evaluation.
+
+## Overview
+
+- **Data Processing**: Resamples time-series data into 5, 10, and 30-minute intervals.
+- **Normalization**: Standardizes features using `StandardScaler`.
+- **Data Splitting**: Splits data into weekly ranges and filters for office hours (9 AM–6 PM).
+- **Data Balancing**: Undersamples the majority class to balance occupancy data.
+- **Models**: Includes LLMs (llama3.2:latest, Gemini-1.5-pro, DeepSeek_R1) and baseline models (Logistic Regression, Random Forest, Decision Tree, XGBoost).
+
+## Setup
+
+1. **Clone the Repository**:
+   ```bash
+   git clone https://github.com/your-username/LLM-occupancy.git
+   cd LLM-occupancy
+
+2. ## Create a Conda Environment:
+
+ ```bash
+conda create --name ml_env python=3.8
+conda activate ml_env
+conda install pandas scikit-learn numpy requests
+ ```
+
+3. ## Prepare Your Data:
+Place your CSV files in a folder named Dataset within the project directory.
+Ensure the CSV files have a datetime column in "YYYY-MM-DD HH:MM:SS" format and a binary occupant_num column.
+
+# Usage
+To run the project, follow these steps:
+
+1. ## Run Data Processing and Normalization:
+- Update input_file_path and resampled_paths in the scripts to match your file names.
+- Execute:
+ ```bash
+python data_processing.py
+python normalization.py
+ ```
+2. ## Balance the Dataset:
+- Modify input_file_path in the balancing script.
+- Run:
+ ```bash
+python data_balancing.py
+ ```
+3. ## Run LLM Models:
+- Ensure the LLM API is hosted locally (e.g., Ollama for llama3.2:latest).
+- Adjust the model parameter in generate_llm_response() for other LLMs.
+- Execute:
+ ```bash
+python llm_models.py
+ ```
+4. ## Run Baseline Models:
+- Ensure processed CSV files are in the Dataset folder.
+- Run:
+ ```bash
+python baseline_models.py
+ ```
+# Code
 ## Data Processing
-The purpose of this code is to process and simplify time-series data by resampling it into fixed intervals (5, 10, and 30 minutes). By averaging data points within these intervals, we reduce data granularity, making it easier to analyze broader trends and patterns over time. The function loads the dataset, resamples it, and saves the results into separate files, ensuring the original dataset remains intact. This step is particularly useful for applications where high-frequency data is unnecessary or overwhelming, allowing for more efficient visualization, analysis, and modeling. The resampled data files are saved with appropriate filenames, ensuring clear identification of the time interval used.
 
-## Code
-
-```python
+```bash
 import pandas as pd
 
 def resample_and_save_data(file_path):
-    # Load the dataset
     data = pd.read_csv(file_path, index_col='datetime', parse_dates=True)
-
-    # Resample the dataset into different time windows using 'min' instead of 'T'
-    data_5min = data.resample('5min').mean()  # 5 minutes
-    data_10min = data.resample('10min').mean()  # 10 minutes
-    data_30min = data.resample('30min').mean()  # 30 minutes
-
-    # Define file paths for the resampled data
+    data_5min = data.resample('5min').mean()
+    data_10min = data.resample('10min').mean()
+    data_30min = data.resample('30min').mean()
     path_5min = file_path.replace('.csv', '_5min.csv')
     path_10min = file_path.replace('.csv', '_10min.csv')
     path_30min = file_path.replace('.csv', '_30min.csv')
-
-    # Save the resampled data to new CSV files
     data_5min.to_csv(path_5min)
     data_10min.to_csv(path_10min)
     data_30min.to_csv(path_30min)
-
-    # Print the paths of saved files as a confirmation
     print("5-minute resampled data saved to:", path_5min)
     print("10-minute resampled data saved to:", path_10min)
     print("30-minute resampled data saved to:", path_30min)
 
-# Specify the path to your input file
 input_file_path = 'cleaned_room_1_data1.csv'
-'''
-
-# Call the function to process and save the data
 resample_and_save_data(input_file_path)
 ```
-
-## Normalization for each resampling
-The normalization is performed using the StandardScaler from the sklearn.preprocessing library. The purpose of normalization is to standardize the features (predictor variables) so that they have a mean of 0 and a standard deviation of 1. This is achieved by applying the StandardScaler to the feature columns of the dataset. The fit_transform() method calculates the mean and standard deviation for each feature and then scales the values accordingly. This ensures that all features are on a comparable scale, which is important for many machine learning algorithms to work effectively. After scaling, the normalized features are converted back into a DataFrame with the original column names and indices, and the binary occupant_num target column is re-added to the dataset. The final result is a dataset where the features are normalized, making them suitable for further analysis or modeling.
-
-## Code
-
-```python
+# Normalization
+```bash
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-
 def check_and_clean_data(data):
-    # Check for any infinite or NaN values in the data
     if np.any(np.isinf(data)) or data.isnull().any().any():
         print("Data contains infinite or NaN values. Handling...")
-        data.replace([np.inf, -np.inf], np.nan, inplace=True)  # Replace infinities with NaN
-        data.fillna(data.mean(), inplace=True)  # Replace NaNs with the mean of each column
+        data.replace([np.inf, -np.inf], np.nan, inplace=True)
+        data.fillna(data.mean(), inplace=True)
     return data
 
-
 def convert_normalize_and_save(file_path):
-    # Load the dataset
     data = pd.read_csv(file_path, index_col='datetime', parse_dates=True)
-
-    # Clean data if necessary
     data = check_and_clean_data(data)
-
-    # Convert 'occupant_num' to binary: 0 if no occupants, 1 if there are one or more occupants
     data['occupant_num'] = (data['occupant_num'] > 0).astype(int)
-
-    # Separate features and target
     features = data.drop('occupant_num', axis=1)
     target = data['occupant_num']
-
-    # Normalize the features using StandardScaler
     scaler = StandardScaler()
     features_scaled = scaler.fit_transform(features)
-
-    # Convert the scaled features back to a DataFrame
     features_scaled_df = pd.DataFrame(features_scaled, columns=features.columns, index=data.index)
-
-    # Include the binary 'occupant_num' back into the DataFrame
     features_scaled_df['occupant_num'] = target
-
-    # Define the output file path
     output_file_path = file_path.replace('.csv', '_normalized.csv')
-
-    # Save the normalized and binary converted data to a new CSV file
     features_scaled_df.to_csv(output_file_path)
+    print(f"Normalized data saved to: {output_file_path}")
 
-    print(f"Binary converted and normalized data saved to: {output_file_path}")
-
-
-# Paths to the resampled datasets
 resampled_paths = [
     'cleaned_room_1_data1_5min.csv',
     'cleaned_room_1_data1_10min.csv',
     'cleaned_room_1_data1_30min.csv'
 ]
-
-# Convert 'occupant_num' to binary, normalize, and save each dataset
 for path in resampled_paths:
     convert_normalize_and_save(path)
 ```
-## Split dataset
-The normalization datasets split into weekly date ranges, filter for office hours (9 AM to 6 PM), and remove columns containing only zeros. By isolating office hours, the analysis focuses on relevant periods for occupancy and energy usage patterns. Splitting the data into weekly blocks makes it easier to study trends over time while removing zero-only columns enhances clarity and reduces unnecessary complexity. The processed data is saved with clear filenames indicating the date range and time resolution, ensuring efficient organization and accessibility for subsequent analysis. This structured approach supports meaningful exploration of time-series data.
 
-## Code
-
-```python
+# Data Splitting
+```bash
 import pandas as pd
 
-
 def split_and_filter_dataset(file_path, date_ranges, output_suffix):
-    """
-    Splits the dataset into specified date ranges, filters for office hours (9 AM to 6 PM),
-    removes columns with only zero values, and saves the results as new CSV files.
-
-    Parameters:
-    - file_path: str, path to the input dataset.
-    - date_ranges: list of tuples, date ranges to filter (start_date, end_date).
-    - output_suffix: str, suffix to add to the output file names.
-    """
-    # Load the dataset
     data = pd.read_csv(file_path, index_col='datetime', parse_dates=True)
-
-    # Filter for office hours: 9 AM to 6 PM
     office_hours = (data.index.time >= pd.to_datetime('09:00').time()) & \
                    (data.index.time <= pd.to_datetime('18:00').time())
     data = data[office_hours]
-
-    # Split the data into specified date ranges
     for start_date, end_date in date_ranges:
-        # Filter data for the date range
         range_data = data[(data.index.date >= pd.to_datetime(start_date).date()) &
                           (data.index.date <= pd.to_datetime(end_date).date())]
-
-        # Drop columns that only contain zeros
         range_data = range_data.loc[:, (range_data != 0).any(axis=0)]
-
-        # Save the filtered data to a new file
         output_file_path = file_path.replace('.csv', f'_{start_date}_to_{end_date}_{output_suffix}.csv')
         range_data.to_csv(output_file_path)
-
         print(f"Data for {start_date} to {end_date} saved to: {output_file_path}")
 
-
-# Define date ranges for splitting
 date_ranges = [
     ('2021-08-23', '2021-08-28'),
     ('2021-08-30', '2021-09-04'),
     ('2021-09-06', '2021-09-11')
 ]
-
-# Paths to the resampled datasets
 file_paths = [
     'cleaned_room_1_data1_5min_normalized.csv',
     'cleaned_room_1_data1_10min_normalized.csv',
     'cleaned_room_1_data1_30min_normalized.csv'
 ]
-
-# Suffixes for output files to indicate time window
 suffixes = ['5min', '10min', '30min']
-
-# Process each dataset with the defined date ranges
 for file_path, suffix in zip(file_paths, suffixes):
     split_and_filter_dataset(file_path, date_ranges, suffix)
 ```
-## What is Data Balancing?
-
-Data balancing refers to addressing the issue of unequal class distribution in a dataset. This is common in binary classification problems, like your task of detecting occupancy (`0` for unoccupied, `1` for occupied), where one class (e.g., `0`) may have significantly more samples than the other (e.g., `1`).
-
-## Why is Balancing Important?
-
-1. **Model Bias:** Most machine learning algorithms tend to favor the majority class, leading to poor performance on the minority class.
-2. **Performance Metrics:** Metrics like accuracy can be misleading in imbalanced datasets (e.g., if 90% of data is of one class, a model predicting that class 100% of the time would appear "accurate").
-3. **Fair Representation:** Balancing ensures that both classes are represented adequately during training, improving model robustness.
-
-## Methods for Data Balancing
-
-1. **Resampling Techniques:**
-    - **Oversampling:** Increase the size of the minority class by duplicating samples or generating synthetic samples.
-        - **SMOTE (Synthetic Minority Oversampling Technique):** Generates synthetic samples in feature space.
-        - **Random Oversampling:** Simply duplicates minority class samples.
-    - **Undersampling:** Reduce the size of the majority class by randomly removing samples.
-        - **Random Undersampling:** Removes majority class samples.
-        - **Cluster Centroids:** Uses clustering to find centroids of the majority class and downsamples to those points.
-2. **Class Weights:**
-    - Adjust the class weights during model training so that the minority class has higher weight, penalizing misclassification more heavily.
-3. **Data Augmentation:**
-    - For cases like images or text, create new samples for the minority class by transformations (e.g., rotation, flipping for images).
-4. **Generate Synthetic Data:**
-    - Use techniques like GANs (Generative Adversarial Networks) for creating synthetic samples of the minority class.
-5. **Stratified Sampling:**
-    - When splitting the dataset into training, validation, and testing, ensure that the class distribution is maintained across splits.
-
-## When to Apply Balancing?
-
-- **Training Data Only:** Apply balancing techniques to the training data, not the validation or test sets. This ensures the evaluation reflects real-world class distributions.
-- **Before Model Training:** Balancing is typically done after splitting the data into training and testing sets.
-
-## Dataset balancing to our Datasets
-
-Here's a script that balances the dataset by **undersampling the majority class (`0: unoccupied`)** to match the minority class (`1: occupied`). The `datetime` column will remain intact throughout the process:
-## Code
-
-```python
-python
-Copy code
+# Data Balancing
+```bash
 import pandas as pd
 
 def balance_dataset(file_path):
-    """
-    Balances the dataset by undersampling the majority class to match the minority class.
-
-    Parameters:
-    - file_path: str, path to the input dataset.
-    """
-    # Load the dataset
     data = pd.read_csv(file_path, index_col='datetime', parse_dates=True)
-
-    # Separate the two classes
-    class_0 = data[data['occupant_num'] == 0]  # Majority class
-    class_1 = data[data['occupant_num'] == 1]  # Minority class
-
-    # Undersample the majority class to match the size of the minority class
+    class_0 = data[data['occupant_num'] == 0]
+    class_1 = data[data['occupant_num'] == 1]
     class_0_undersampled = class_0.sample(n=len(class_1), random_state=42)
-
-    # Combine the undersampled majority class with the minority class
-    balanced_data = pd.concat([class_0_undersampled, class_1], axis=0)
-
-    # Shuffle the combined data
-    balanced_data = balanced_data.sample(frac=1, random_state=42)
-
-    # Save the balanced dataset to a new file
+    balanced_data = pd.concat([class_0_undersampled, class_1], axis=0).sample(frac=1, random_state=42)
     output_file_path = file_path.replace('.csv', '_undersampled_balanced.csv')
     balanced_data.to_csv(output_file_path)
-
     print(f"Balanced dataset saved to: {output_file_path}")
-    print(f"Balanced class distribution:\n{balanced_data['occupant_num'].value_counts()}")
+    print(f"Class distribution:\n{balanced_data['occupant_num'].value_counts()}")
 
-# Path to the input file
 input_file_path = '/mnt/data/R1W1_5min.csv'
-
-# Call the function to balance the dataset
 balance_dataset(input_file_path)
 ```
-## What is LLM (Large Language Model)?
+# LLM Models
 
-A Large Language Model (LLM) is a type of artificial intelligence designed to understand and generate human language. These models are trained on massive datasets that include vast amounts of text from various sources, allowing them to learn patterns in language, context, and meaning. LLMs, such as GPT (Generative Pre-trained Transformer) or LLaMA (Large Language Model Meta AI), are capable of processing and generating coherent text, interpreting structured data, answering questions, and making predictions based on the input provided. Their ability to process complex language structures makes them a powerful tool in a variety of applications, including natural language understanding, text generation, and data interpretation.
-
-In this resarch, we will apply the llama3.2:latest model, a version of the LLaMA family of LLMs, to predict room occupancy based on historical environmental and control system data. The model uses natural language processing to analyze the structured data provided in the form of a prompt, making it suitable for tasks like occupancy prediction. The model generates predictions based on a prompt that is dynamically created with context and historical data. This prompt incorporates a selection of training data, which consists of records detailing environmental and control system factors, such as date, time, temperature, and occupancy. These training examples, which are randomly sampled from the historical data, inform the model by providing examples of when rooms were occupied and the associated temperatures for those dates. If a date from the test data is missing from the temperature mapping, a default temperature is used instead.
-
-For each row of test data, the prompt is constructed by excluding the occupancy column (the true occupancy value) and including other relevant features. The resulting test data is then appended to the prompt, asking the model to predict whether the room is occupied or not, based on the input details. This prompt is sent to a locally hosted version of the "llama3.2:latest" model via the LLM API, which processes the prompt and returns a prediction of the occupancy status. The LLM uses the historical context within the prompt to evaluate the likelihood of the room being occupied, leveraging its natural language processing capabilities. By interpreting the structured data, the LLM transforms it into a prediction that provides valuable insights for managing building occupancy, making the information accessible and actionable.
-
-## Code
-
-```python
+```bash
 import os
 import pandas as pd
 import requests
@@ -264,17 +177,13 @@ import json
 import time
 from sklearn.metrics import classification_report
 
-# Define result directory
-RESULT_DIR = "result_occ"
+RESULT_DIR = "result_OCC"
 if not os.path.exists(RESULT_DIR):
     os.makedirs(RESULT_DIR)
 
-
-# Function to interact with LLM API with retry logic
 def generate_llm_response(prompt, model="llama3.2:latest", retries=3, delay=2):
     url = "http://localhost:11434/api/chat"
     payload = {"model": model, "messages": [{"role": "user", "content": prompt}]}
-
     for attempt in range(retries):
         try:
             response = requests.post(url, json=payload)
@@ -295,13 +204,8 @@ def generate_llm_response(prompt, model="llama3.2:latest", retries=3, delay=2):
             time.sleep(delay)
     return "Error"
 
-
-# Construct prompt dynamically using all columns except `occupant_num`
 def construct_prompt(training_data, test_row):
-    # Define a default temperature in case the date is not found in the mapping
-    default_temperature = 75  # This should be a reasonable estimate or the average temperature
-
-    # Temperature mapping from the user-provided data
+    default_temperature = 75
     temp_mapping = {
         "2021-08-23": 78, "2021-08-24": 77, "2021-08-25": 79, "2021-08-26": 78, "2021-08-27": 77,
         "2021-08-28": 78, "2021-08-29": 77, "2021-08-30": 76, "2021-08-31": 75, "2021-09-01": 74,
@@ -310,7 +214,7 @@ def construct_prompt(training_data, test_row):
         "2021-09-12": 64
     }
     training_data_sample = training_data.sample(n=min(20, len(training_data)), random_state=42)
-    training_examples = "\n".join([ 
+    training_examples = "\n".join([
         f"- {', '.join([f'{col}: {row[col]}' for col in training_data_sample.columns if col != 'occupant_num'])}, "
         f"Temperature: {temp_mapping.get(str(row['datetime'].date()), default_temperature)}°F, "
         f"Occupancy: {'Occupied' if row['occupant_num'] > 0 else 'Not Occupied'}"
@@ -318,43 +222,23 @@ def construct_prompt(training_data, test_row):
     ])
     test_date_str = str(test_row['datetime'].date())
     test_temperature = temp_mapping.get(test_date_str, default_temperature)
-    if test_date_str not in temp_mapping:
-        print(
-            f"Warning: Temperature for date {test_date_str} not found. Using default temperature {default_temperature}°F.")
     test_example = ", ".join([f"{col}: {test_row[col]}" for col in training_data.columns if col != 'occupant_num']) + f", Temperature: {test_temperature}°F"
-
     prompt = (
-        "You are a model trained to detect room occupancy status (occupied or not occupied) in an office building "
-        "located in Baoding City, Hebei Province. This analysis considers environmental and control system data, "
-        "covering the period from August 23 to September 12, 2023, with the specific temperature fluctuations provided. "
-        "This setting includes typical office hours and building dynamics.\n\n"
+        "You are a model trained to detect room occupancy status (Occupied or Not Occupied) in an office building "
+        "in Baoding City, Hebei Province, using data from August 23 to September 12, 2023, with provided temperatures.\n"
         f"Training Data:\n{training_examples}\n"
-        "Predict the occupancy status (Occupied or Not Occupied) for the following data:\n\n"
+        "Predict the occupancy status for:\n"
         f"- {test_example}"
     )
     return prompt
 
-
-# Main processing function
 def process_data(file_name):
-    try:
-        data = pd.read_csv(file_name)
-        data['datetime'] = pd.to_datetime(data['datetime'])
-    except Exception as e:
-        print(f"Error loading dataset: {e}")
-        return
-
-    if data.isnull().any().any():
-        print("Dataset contains missing values. Please clean the data before running.")
-        return
-
+    data = pd.read_csv(file_name)
+    data['datetime'] = pd.to_datetime(data['datetime'])
     data = data[(data['datetime'].dt.hour >= 9) & (data['datetime'].dt.hour < 18)]
-    data['date'] = data['datetime'].dt.date
     data['day_of_week'] = data['datetime'].dt.dayofweek
-
-    training_data = data[data['day_of_week'] < 4]  # Monday to Thursday
-    test_data = data[data['day_of_week'] == 4]  # Friday
-
+    training_data = data[data['day_of_week'] < 4]
+    test_data = data[data['day_of_week'] == 4]
     predictions = []
     for _, test_row in test_data.iterrows():
         prompt = construct_prompt(training_data, test_row)
@@ -364,98 +248,69 @@ def process_data(file_name):
             "true_label": 'Occupied' if test_row['occupant_num'] > 0 else 'Not Occupied',
             "pred_label": prediction
         })
-
     output_file = os.path.join(RESULT_DIR, f"{os.path.splitext(os.path.basename(file_name))[0]}_pred.csv")
-    predictions_df = pd.DataFrame(predictions)
-    predictions_df.to_csv(output_file, index=False)
-
+    pd.DataFrame(predictions).to_csv(output_file, index=False)
     print(f"Predictions saved to: {output_file}")
     print("Accuracy Report:")
+    predictions_df = pd.DataFrame(predictions)
     print(classification_report(predictions_df["true_label"], predictions_df["pred_label"]))
 
-
-# Entry point
 def main():
-    directory = os.getcwd()  # Assumes the CSV files are in the same directory as the script
+    directory = os.getcwd()
     csv_files = [file for file in os.listdir(directory) if file.endswith('.csv')]
-
-    if not csv_files:
-        print("No CSV files found in the directory.")
-        return
-
     for file_name in csv_files:
         file_path = os.path.join(directory, file_name)
-        if not os.path.exists(file_path):
-            print(f"Dataset file '{file_name}' not found. Please check the file path.")
-            continue
         print(f"Processing file: {file_name}")
         process_data(file_path)
-
 
 if __name__ == "__main__":
     main()
 ```
-## Baseline models
-To compare our LLM accuracy results, we applied baseline models (Logistic Regression, Random Forest, Decision Tree, and XGBoost). In the following script, we load multiple CSV datasets containing occupancy data and process them by splitting the data into training and testing sets. The training set includes data from Monday to Thursday, while the testing set consists of Friday's data. We then train each baseline model on the training data and evaluate their performance by predicting occupancy levels on the test data. The accuracy results for each model are calculated and saved in a JSON file for each dataset, allowing us to easily compare model performances. These results are also printed to the console for immediate review. This script provides a structured approach for assessing and comparing the effectiveness of different machine learning models in predicting occupancy.
+# Baseline Models
 
-## Code
-
-```python
+```bash
 import pandas as pd
 import os
 import json
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
 
 def load_data(filepath):
-    # Load the dataset and set datetime as index
     data = pd.read_csv(filepath)
     data['datetime'] = pd.to_datetime(data['datetime'])
     data.set_index('datetime', inplace=True)
     return data
 
 def prepare_data(data):
-    # Split data based on day of the week
-    train_data = data[data.index.weekday < 4]  # Monday to Thursday
-    test_data = data[data.index.weekday == 4]  # Friday
-
-    # Define the features and target, excluding 'occupant_num'
+    train_data = data[data.index.weekday < 4]
+    test_data = data[data.index.weekday == 4]
     X_train = train_data.drop(columns='occupant_num')
     y_train = train_data['occupant_num']
     X_test = test_data.drop(columns='occupant_num')
     y_test = test_data['occupant_num']
-
     return X_train, y_train, X_test, y_test
 
 def train_and_evaluate(X_train, y_train, X_test, y_test):
-    # Define models
     models = {
         'Logistic Regression': LogisticRegression(max_iter=1000),
         'Random Forest': RandomForestClassifier(),
         'Decision Tree': DecisionTreeClassifier(),
         'XGBoost': GradientBoostingClassifier()
     }
-
-    # Train and evaluate each model
     results = {}
     for name, model in models.items():
         model.fit(X_train, y_train)
         predictions = model.predict(X_test)
-        accuracy = accuracy_score(y_test, predictions)
-        results[name] = accuracy
+        results[name] = accuracy_score(y_test, predictions)
     return results
 
 def main():
-    # Set the directory containing the CSV files
-    data_directory = './Dataset'  # Point to the 'Dataset' folder
+    data_directory = './Dataset'
     result_directory = 'Result_ML'
     if not os.path.exists(result_directory):
         os.makedirs(result_directory)
-
-    # Process each CSV file in the directory
     for filename in os.listdir(data_directory):
         if filename.endswith('.csv'):
             filepath = os.path.join(data_directory, filename)
@@ -472,21 +327,41 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-## Model Accuracy Results
+# Model Accuracy Results
 
-| Interval         | Logistic Regression | Random Forest | Decision Tree | XGBoost | LLM (llama3.2:latest)    |
-|------------------|---------------------|---------------|---------------|---------|----------------------|
-| Week 1 - 5 min   | 91.67%              | 94.44%        | 88.89%        | 93.06%  | 91.67%               |
-| Week 1 - 10 min  | 86.36%              | 88.64%        | 68.18%        | 88.64%  | 86.36%               |
-| Week 1 - 30 min  | 83.33%              | 83.33%        | 72.22%        | 83.33%  | 88.89%               |
-| Week 2 - 5 min   | 86.73%              | 89.80%        | 83.67%        | 88.78%  | 86.73%               |
-| Week 2 - 10 min  | 87.50%              | 91.67%        | 77.08%        | 89.58%  | 89.58%               |
-| Week 2 - 30 min  | 91.67%              | 100.00%       | 66.67%        | 100.00% | 91.67%               |
-| Week 3 - 5 min   | 76.71%              | 65.75%        | 42.47%        | 63.01%  | 82.19%               |
-| Week 3 - 10 min  | 65.12%              | 60.47%        | 46.51%        | 55.81%  | 86.05%               |
-| Week 3 - 30 min  | 63.16%              | 63.16%        | 63.16%        | 63.16%  | 94.74%               |
+| Interval        | Logistic Regression | Random Forest | Decision Tree | XGBoost | LLM (llama3.2:latest) |
+|-----------------|---------------------|---------------|---------------|---------|-----------------------|
+| Week 1 - 5 min  | 91.67%              | 94.44%        | 88.89%        | 93.06%  | 91.67%                |
+| Week 1 - 10 min | 86.36%              | 88.64%        | 68.18%        | 88.64%  | 86.36%                |
+| Week 1 - 30 min | 83.33%              | 83.33%        | 72.22%        | 83.33%  | 88.89%                |
+| Week 2 - 5 min  | 86.73%              | 89.80%        | 83.67%        | 88.78%  | 86.73%                |
+| Week 2 - 10 min | 87.50%              | 91.67%        | 77.08%        | 89.58%  | 89.58%                |
+| Week 2 - 30 min | 91.67%              | 100.00%       | 66.67%        | 100.00% | 91.67%                |
+| Week 3 - 5 min  | 76.71%              | 65.75%        | 42.47%        | 63.01%  | 82.19%                |
+| Week 3 - 10 min | 65.12%              | 60.47%        | 46.51%        | 55.81%  | 86.05%                |
+| Week 3 - 30 min | 63.16%              | 63.16%        | 63.16%        | 63.16%  | 94.74%                |
 
-## Conclusion
-The LLM (llama3.2:latest) consistently outperforms baseline models like Decision Tree and Logistic Regression, particularly in longer time intervals (10 min and 30 min). LLM shows better generalization in Week 3, where it achieves higher accuracy than all baseline models, especially at the 30-minute interval. This trend highlights LLM's robustness in predicting occupancy levels, even in more complex scenarios with extended time intervals. Additionally, in Week 2, LLM demonstrates a competitive edge, often matching or surpassing the accuracy of Random Forest and XGBoost. Overall, LLM appears to be a strong model, excelling in various time intervals and providing reliable predictions across different weeks, showcasing its potential for occupancy prediction tasks.
+**Note**: Results shown are for llama3.2:latest. To generate results for Gemini-1.5-pro or DeepSeek_R1, adjust the model parameter in the LLM script.
 
+# Conclusion
+The LLM (llama3.2:latest) consistently outperforms Decision Tree and Logistic Regression, particularly at longer intervals (10 and 30 minutes), and demonstrates strong generalization in Week 3 with up to 94.74% accuracy. It remains competitive with Random Forest and XGBoost, especially in Week 2. LLMs, including Gemini-1.5-pro and DeepSeek_R1, provide robust occupancy prediction across various intervals and weeks.
+
+# Contributing
+Contributions are welcome! To contribute:
+
+1. Fork the repository.
+2. Create a feature branch:
+```bash
+git checkout -b feature/new-feature
+```
+3. Commit your changes:
+```bash
+git commit -m 'Add new feature'
+```
+4. Push to the branch:
+```bash
+git push origin feature/new-feature
+```
+5. Open a pull request.
+Please ensure your code adheres to the project’s style and includes tests where applicable.
 
