@@ -40,8 +40,8 @@ python data_processing.py
 python normalization.py
  ```
 2. ## Data Splitting:
-   Splits data into weekly ranges and filters for office hours (9 AM–6 PM)
-   - Run:
+- Splits data into weekly ranges and filters for office hours (9 AM–6 PM)
+- Run:
  ```bash
 python Data_Splitting.py
  ```
