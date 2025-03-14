@@ -39,20 +39,27 @@ To run the project, follow these steps:
 python data_processing.py
 python normalization.py
  ```
-2. ## Balance the Dataset:
+2. ## Data Splitting:
+   Splits data into weekly ranges and filters for office hours (9 AM–6 PM)
+   - Run:
+ ```bash
+python Data_Splitting.py
+ ```
+   
+4. ## Balance the Dataset:
 - Modify input_file_path in the balancing script.
 - Run:
  ```bash
 python data_balancing.py
  ```
-3. ## Run LLM Models:
+4. ## Run LLM Models:
 - Ensure the LLM API is hosted locally (e.g., Ollama for llama3.2:latest).
 - Adjust the model parameter in generate_llm_response() for other LLMs.
 - Execute:
  ```bash
 python llm_models.py
  ```
-4. ## Run Baseline Models:
+5. ## Run Baseline Models:
 - Ensure processed CSV files are in the Dataset folder.
 - Run:
  ```bash
