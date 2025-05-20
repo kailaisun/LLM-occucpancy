@@ -83,14 +83,37 @@ GEMINI_API_KEY=your_gemini_key
 git clone https://github.com/kailaisun/LLM-occucpancy.git
 cd LLM-occucpancy
 ```
+## Dataset Preparation
+This project uses two real-world datasets from an office building in China and an open-plan office in Singapore.
 
 
+### 📄 Input Format
 
-- **Data Processing**: Resamples time-series data into 5, 10, and 30-minute intervals.
-- **Normalization**: Standardizes features using `StandardScaler`.
-- **Data Splitting**: Splits data into weekly ranges and filters for office hours (9 AM–6 PM).
-- **Data Balancing**: Undersamples the majority class to balance occupancy data.
-- **Models**: Includes LLMs (llama3.2:latest, Gemini-1.5-pro, DeepSeek_R1) and baseline models (Logistic Regression, Random Forest, Decision Tree, XGBoost).
+Each CSV file should contain:
+
+- `datetime`: Timestamps in `YYYY-MM-DD HH:MM:SS` format  
+- `occupant_num`: Ground-truth number of occupants (or binary label for Case Study 1)  
+- Environmental features (e.g., temperature, humidity, plug load, airflow, FCU status, etc.)
+
+---
+
+###  Preprocessing Steps
+
+Navigate to the `Code` directory and run:
+
+```bash
+# Step 1: Clean and parse raw data
+python data_processing.py
+
+# Step 2: Normalize features using Min-Max scaling
+python normalization.py
+
+# Step 3: Balance dataset (for binary classification case only)
+python data_balancing.py
+
+# Step 4: Split data by week, date, or interval (for model evaluation)
+python Data_Splitting.py
+```
 
 ## Setup
 
