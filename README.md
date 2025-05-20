@@ -84,15 +84,13 @@ cd LLM-occucpancy
 This project uses two real-world datasets from an office building in China and an open-plan office in Singapore.
 
 
-### 📄 Input Format
+### Input Format
 
 Each CSV file should contain:
 
 - `datetime`: Timestamps in `YYYY-MM-DD HH:MM:SS` format  
 - `occupant_num`: Ground-truth number of occupants (or binary label for Case Study 1)  
 - Environmental features (e.g., temperature, humidity, plug load, airflow, FCU status, etc.)
-
----
 
 ###  Preprocessing Steps
 
