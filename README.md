@@ -34,7 +34,9 @@ If you find this project helpful, please give us a star ⭐ — your support is 
 
 ### Environment Installation
 We recommend using **Miniconda** to manage your Python environment.
+
 **Step 0:** Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+
 **Step 1:** Create and activate a virtual environment
 ```bash
 conda create -n llm_occ python=3.8 -y
@@ -47,43 +49,40 @@ pip install pandas numpy scikit-learn matplotlib requests
 ```
 
 ### LLM Setup
+**LLaMA 3.2 (Local via Ollama)**
+
 Install [Ollama 3.2](https://ollama.com/) and pull the LLaMA model:
 
 ```bash
 ollama pull llama3:8b
 ```
-Our llm_models.py script connects to the local Ollama instance for LLaMA-based predictions.
 
 Run the model locally:
 
-bash
-Copy
-Edit
+```bash
 ollama run llama3
+```
 Our llm_models.py script connects to the local Ollama instance for LLaMA-based predictions.
 
-🔹 DeepSeek-R1 & Gemini-Pro (via API Keys)
+**DeepSeek-R1 & Gemini-Pro (via API Keys)**
+
 Obtain your API keys from the following sources:
 
-DeepSeek API
+- [DeepSeek API](https://platform.deepseek.com/)
+- [Gemini API (Google AI Studio)](https://makersuite.google.com/)
 
-Gemini API
+Set your keys in a `.env` file or your environment:
 
-Set your keys in a .env file or your environment:
-
-bash
-Copy
-Edit
+```bash
 # .env file format
 DEEPSEEK_API_KEY=your_deepseek_key
 GEMINI_API_KEY=your_gemini_key
-Clone the Repository
-bash
-Copy
-Edit
+```
+### Clone the Repository
+```bash
 git clone https://github.com/kailaisun/LLM-occucpancy.git
 cd LLM-occucpancy
-
+```
 
 
 
