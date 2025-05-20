@@ -1,6 +1,10 @@
 # Introduction
 
-This project predicts room occupancy using machine learning models, including LLMs (llama3.2:latest, Gemini-1.5-pro, DeepSeek_R1), alongside baseline models. 
+The repository contains the code implementation of the paper:
+
+Exploring Large Language Models for Indoor Occupancy Detection and Estimation for Smart Buildings
+
+<p align="center"> <img src="Figures/CoT_FewShot.jpg" alt="LLM Occupancy Framework" width="700"/> </p>
 
 ## Overview
 
