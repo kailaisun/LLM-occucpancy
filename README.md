@@ -6,7 +6,95 @@ Exploring Large Language Models for Indoor Occupancy Detection and Estimation fo
 
 <p align="center"> <img src="Figures/CoT_FewShot.jpg" alt="LLM Occupancy Framework" width="700"/> </p>
 
-## Overview
+This study proposes an LLM-based occupancy detection and estimation framework using few-shot learning, chain-of-thought, and in-context learning, demonstrating that models like Gemini-Pro and DeepSeek-R1 outperform traditional methods across diverse datasets from China and Singapore, offering robust and adaptable solutions for smart building management.
+
+If you find this project helpful, please give us a star ⭐ — your support is our greatest motivation.
+
+## Table of Contents
+
+- [Introduction](#introduction)
+- [Installation](#installation)
+- [Dataset Preparation](#dataset-preparation)
+- [Model Training](#model-training)
+- [Model Testing](#model-testing)
+- [Image Prediction](#image-prediction)
+- [Acknowledgements](#acknowledgements)
+- [Citation](#citation)
+- [License](#license)
+- [Contact Us](#contact-us)
+
+
+## Installation
+
+## Installation
+
+### Dependencies
+
+- Windows / Linux / macOS  
+- Python 3.8+  
+- Required Python packages: `pandas`, `numpy`, `scikit-learn`, `matplotlib`, `requests`  
+- [Ollama](https://ollama.com/) (for local LLaMA 3.2 model inference)  
+- API access for **DeepSeek-R1** and **Gemini-Pro**
+
+---
+
+### Environment Installation
+
+We recommend using **Miniconda** to manage your Python environment.
+
+**Step 0:** Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+
+**Step 1:** Create and activate a virtual environment
+```bash
+conda create -n llm_occ python=3.8 -y
+conda activate llm_occ
+```
+**Step 3:** Install dependencies
+
+```bash
+pip install pandas numpy scikit-learn matplotlib requests
+```
+
+### LLM Setup
+Install [Ollama 3.2](https://ollama.com/) and pull the LLaMA model:
+
+```bash
+ollama pull llama3:8b
+```
+Our llm_models.py script connects to the local Ollama instance for LLaMA-based predictions.
+
+Run the model locally:
+
+bash
+Copy
+Edit
+ollama run llama3
+Our llm_models.py script connects to the local Ollama instance for LLaMA-based predictions.
+
+🔹 DeepSeek-R1 & Gemini-Pro (via API Keys)
+Obtain your API keys from the following sources:
+
+DeepSeek API
+
+Gemini API
+
+Set your keys in a .env file or your environment:
+
+bash
+Copy
+Edit
+# .env file format
+DEEPSEEK_API_KEY=your_deepseek_key
+GEMINI_API_KEY=your_gemini_key
+Clone the Repository
+bash
+Copy
+Edit
+git clone https://github.com/kailaisun/LLM-occucpancy.git
+cd LLM-occucpancy
+
+
+
 
 - **Data Processing**: Resamples time-series data into 5, 10, and 30-minute intervals.
 - **Normalization**: Standardizes features using `StandardScaler`.
