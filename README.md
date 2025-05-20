@@ -25,25 +25,16 @@ If you find this project helpful, please give us a star ⭐ — your support is 
 
 
 ## Installation
-
-## Installation
-
 ### Dependencies
-
 - Windows / Linux / macOS  
 - Python 3.8+  
 - Required Python packages: `pandas`, `numpy`, `scikit-learn`, `matplotlib`, `requests`  
 - [Ollama](https://ollama.com/) (for local LLaMA 3.2 model inference)  
 - API access for **DeepSeek-R1** and **Gemini-Pro**
 
----
-
 ### Environment Installation
-
 We recommend using **Miniconda** to manage your Python environment.
-
 **Step 0:** Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
-
 **Step 1:** Create and activate a virtual environment
 ```bash
 conda create -n llm_occ python=3.8 -y
