@@ -1,4 +1,4 @@
-# LLM-Occupancy
+# Introduction
 
 This project predicts room occupancy using machine learning models, including LLMs (llama3.2:latest, Gemini-1.5-pro, DeepSeek_R1), alongside baseline models. 
 
