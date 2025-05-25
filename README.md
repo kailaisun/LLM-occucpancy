@@ -51,7 +51,7 @@ pip install pandas numpy scikit-learn matplotlib requests
 Install [Ollama 3.2](https://ollama.com/) and pull the LLaMA model:
 
 ```bash
-ollama pull llama3:8b
+ollama pull llama3.2:latest
 ```
 
 Run the model locally:
